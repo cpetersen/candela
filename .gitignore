@@ -7,5 +7,12 @@
 /spec/reports/
 /tmp/
 
+# Rust artifacts
+/target/
+/ext/candela/target/
+/lib/*.so
+/lib/*.dylib
+
 # rspec failure tracking
 .rspec_status
+EOF < /dev/null

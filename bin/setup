@@ -3,6 +3,18 @@ set -euo pipefail
 IFS=$'\n\t'
 set -vx
 
+# Check if Rust is installed
+if ! command -v cargo &> /dev/null
+then
+    echo "Rust is not installed. Please install Rust: https://www.rust-lang.org/tools/install"
+    exit 1
+fi
+
+# Install Ruby dependencies
 bundle install
 
-# Do any other automated setup that you need to do here
+# Build Rust extension
+cd ext/candela
+cargo build --release
+mkdir -p ../../lib
+cp target/release/libcandela.dylib ../../lib/candela_ext.so
