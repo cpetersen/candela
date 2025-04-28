@@ -1,19 +1,19 @@
 require "mkmf"
 require "fileutils"
 
-# Build the Rust extension with cargo
-cargo_dir = File.expand_path(__dir__) # Current directory
+cargo_dir = File.expand_path(__dir__)
 target_dir = File.join(cargo_dir, "target", "release")
-ext_so = "libcandela.#{RbConfig::CONFIG["DLEXT"]}"
+lib_name = "candela"
+ext_so = "lib#{lib_name}.#{RbConfig::CONFIG["DLEXT"]}"
 
-# Compile Rust extension
+# Build the Rust extension
 puts "Building Rust extension..."
-system("cargo build --release --manifest-path #{File.join(cargo_dir, "Cargo.toml")}") || raise("cargo build failed")
+system("cargo build --release") || raise("cargo build failed")
 
-# Create Makefile to install built library
+# Create dummy Makefile
 create_makefile("candela/candela")
 
-# Monkey patch Makefile so `make install` just copies the compiled .so/.bundle file
+# Patch Makefile to copy Rust extension
 open("Makefile", "a") do |f|
   f.puts <<~MAKE
     install:
