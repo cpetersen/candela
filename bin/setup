@@ -15,6 +15,5 @@ bundle install
 
 # Build Rust extension
 cd ext/candela
-cargo build --release
-mkdir -p ../../lib
-cp target/release/libcandela.dylib ../../lib/candela_ext.so
+rake
+cd ../..

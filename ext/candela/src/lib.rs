@@ -1,5 +1,8 @@
-use candle_core::Tensor;
-use magnus::{define_class, function, method, prelude::*, Error, Module, Object, RClass, Ruby, Value};
+#[macro_use]
+extern crate magnus;
+
+use candle_core::{Device, Tensor};
+use magnus::{function, method, Error, Module, Object, Ruby};
 
 #[magnus::wrap(class = "Candela::Tensor")]
 struct RbTensor {
@@ -8,7 +11,9 @@ struct RbTensor {
 
 impl RbTensor {
     fn new(values: Vec<f64>, shape: Vec<usize>) -> Result<Self, Error> {
-        let tensor = Tensor::new(values.as_slice(), &shape)
+        // Create a tensor from values on CPU device
+        let device = Device::Cpu;
+        let tensor = Tensor::from_vec(values, &shape[..], &device)
             .map_err(|e| Error::new(magnus::exception::runtime_error(), e.to_string()))?;
         
         Ok(RbTensor { inner: tensor })
@@ -35,4 +40,10 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     tensor_class.define_method("to_vec", method!(RbTensor::to_vec, 0))?;
     
     Ok(())
+}
+
+#[allow(non_snake_case)]
+#[no_mangle]
+pub extern "C" fn Init_candela_ext() {
+    magnus::init(init);
 }

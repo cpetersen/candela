@@ -10,8 +10,7 @@ require "standard/rake"
 desc "Build Rust extension"
 task :build_ext do
   Dir.chdir("ext/candela") do
-    sh "cargo build --release"
-    sh "cp target/release/libcandela.dylib ../../lib/candela_ext.so"
+    sh "make"
   end
 end
 
