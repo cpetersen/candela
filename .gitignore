@@ -16,4 +16,3 @@
 
 # rspec failure tracking
 .rspec_status
-EOF < /dev/null
