@@ -11,6 +11,7 @@
 /target/
 /ext/candela/target/
 /lib/*.so
+/lib/*.bundle
 /lib/*.dylib
 
 # rspec failure tracking
