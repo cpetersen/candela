@@ -12,21 +12,41 @@ desc "Build Rust extension"
 task :build_ext do
   Dir.chdir("ext/candela") do
     puts "Building Rust extension..."
-    system("cargo build --release") || raise("Cargo build failed")
+    status = system("ruby extconf.rb")
+    raise "Failed to configure extension" unless status
+    
+    status = system("make")
+    raise "Failed to build extension" unless status
     
     # Create lib directory if it doesn't exist
     FileUtils.mkdir_p("../../lib")
     
-    # Copy the compiled library to the lib directory with the correct name for the platform
-    if RbConfig::CONFIG['host_os'] =~ /darwin/
-      FileUtils.cp("target/release/libcandela.dylib", "../../lib/candela_ext.bundle")
-    elsif RbConfig::CONFIG['host_os'] =~ /linux/
-      FileUtils.cp("target/release/libcandela.so", "../../lib/candela_ext.so")
-    elsif RbConfig::CONFIG['host_os'] =~ /mingw|mswin/
-      FileUtils.cp("target/release/candela.dll", "../../lib/candela_ext.dll")
-    else
-      raise "Unsupported platform: #{RbConfig::CONFIG['host_os']}"
-    end
+    # Set the correct extension based on platform
+    ext = case RbConfig::CONFIG['host_os']
+          when /darwin/
+            'bundle'
+          when /linux/
+            'so'
+          when /mingw|mswin/
+            'dll'
+          else
+            raise "Unsupported platform: #{RbConfig::CONFIG['host_os']}"
+          end
+    
+    # Copy to lib directory
+    # Find the built extension file
+    ext_source = case RbConfig::CONFIG['host_os']
+                 when /darwin/
+                   "target/release/libcandela.dylib"
+                 when /linux/
+                   "target/release/libcandela.so"
+                 when /mingw|mswin/
+                   "target/release/candela.dll"
+                 else
+                   raise "Unsupported platform: #{RbConfig::CONFIG['host_os']}"
+                 end
+                 
+    FileUtils.cp(ext_source, "../../lib/candela_ext.#{ext}")
     
     puts "Rust extension built successfully"
   end

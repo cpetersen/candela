@@ -1,56 +1,23 @@
-require 'mkmf'
-require 'fileutils'
+require "mkmf"
+require "fileutils"
 
-# Check for Rust/Cargo
-unless system('cargo --version > /dev/null 2>&1')
-  raise "Rust and Cargo are required to build this gem. Please install Rust: https://www.rust-lang.org/tools/install"
+# Build the Rust extension with cargo
+cargo_dir = File.expand_path(__dir__) # Current directory
+target_dir = File.join(cargo_dir, "target", "release")
+ext_so = "libcandela.#{RbConfig::CONFIG["DLEXT"]}"
+
+# Compile Rust extension
+puts "Building Rust extension..."
+system("cargo build --release --manifest-path #{File.join(cargo_dir, "Cargo.toml")}") || raise("cargo build failed")
+
+# Create Makefile to install built library
+create_makefile("candela/candela")
+
+# Monkey patch Makefile so `make install` just copies the compiled .so/.bundle file
+open("Makefile", "a") do |f|
+  f.puts <<~MAKE
+    install:
+\tmkdir -p $(DESTDIR)$(sitearchdir)
+\tcp #{File.join(target_dir, ext_so)} $(DESTDIR)$(sitearchdir)/
+  MAKE
 end
-
-# Get Ruby include paths
-ruby_include = `#{RbConfig.ruby} -e "puts RbConfig::CONFIG['rubyhdrdir']"`.chomp
-ruby_include_arch = `#{RbConfig.ruby} -e "puts RbConfig::CONFIG['rubyarchhdrdir']"`.chomp
-ruby_lib = `#{RbConfig.ruby} -e "puts RbConfig::CONFIG['libdir']"`.chomp
-
-# Create a .cargo/config.toml file to specify rustc linker flags
-FileUtils.mkdir_p('.cargo')
-File.open('.cargo/config.toml', 'w') do |f|
-  f.puts <<~CONFIG
-    [target.aarch64-apple-darwin]
-    rustflags = [
-      "-L", "#{ruby_lib}",
-      "-l", "ruby",
-      "-undefined", "dynamic_lookup"
-    ]
-
-    [target.x86_64-apple-darwin]
-    rustflags = [
-      "-L", "#{ruby_lib}",
-      "-l", "ruby",
-      "-undefined", "dynamic_lookup"
-    ]
-  CONFIG
-end
-
-# Create Makefile to build the rust extension
-File.open('Makefile', 'w') do |f|
-  f.puts <<~MAKEFILE
-    SHELL = /bin/sh
-    
-    # Ruby extension target
-    .PHONY: all clean
-    
-    all: ../../lib/candela_ext.bundle
-    
-    ../../lib/candela_ext.bundle:
-    \tcargo build --release
-    \tmkdir -p ../../lib
-    \tcp target/release/libcandela.dylib ../../lib/candela_ext.bundle
-    
-    clean:
-    \tcargo clean
-    \trm -f ../../lib/candela_ext.bundle
-  MAKEFILE
-end
-
-# Just a placeholder to make mkmf happy
-create_makefile('dummy')

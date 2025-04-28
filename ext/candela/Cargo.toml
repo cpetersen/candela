@@ -8,5 +8,9 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-magnus = "0.6"
+magnus = { version = "0.6", features = ["embed"] }
 candle-core = "0.9.0"
+
+[build-dependencies]
+magnus = { version = "0.6", features = ["embed"] }
+magnus-export = "0.6"

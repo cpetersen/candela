@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate magnus;
-
 use candle_core::{Device, Tensor};
 use magnus::{function, method, Error, Module, Object, Ruby};
 
@@ -40,10 +37,4 @@ fn init(ruby: &Ruby) -> Result<(), Error> {
     tensor_class.define_method("to_vec", method!(RbTensor::to_vec, 0))?;
     
     Ok(())
-}
-
-#[allow(non_snake_case)]
-#[no_mangle]
-pub extern "C" fn Init_candela_ext() {
-    magnus::init(init);
 }
