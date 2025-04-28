@@ -11,17 +11,7 @@ require "standard/rake"
 desc "Build Rust extension"
 task :build_ext do
   Dir.chdir("ext/candela") do
-    puts "Building Rust extension..."
-    status = system("ruby extconf.rb")
-    raise "Failed to configure extension" unless status
-    
-    status = system("make")
-    raise "Failed to build extension" unless status
-    
-    # Create lib directory if it doesn't exist
-    FileUtils.mkdir_p("../../lib")
-    
-    # Set the correct extension based on platform
+    # Determine platform-specific extension
     ext = case RbConfig::CONFIG['host_os']
           when /darwin/
             'bundle'
@@ -33,8 +23,7 @@ task :build_ext do
             raise "Unsupported platform: #{RbConfig::CONFIG['host_os']}"
           end
     
-    # Copy to lib directory
-    # Find the built extension file
+    # Determine source path for built extension
     ext_source = case RbConfig::CONFIG['host_os']
                  when /darwin/
                    "target/release/libcandela.dylib"
@@ -45,7 +34,19 @@ task :build_ext do
                  else
                    raise "Unsupported platform: #{RbConfig::CONFIG['host_os']}"
                  end
-                 
+    
+    # Use Ruby's standard extension building process
+    puts "Building Rust extension..."
+    # First, clean up any previous builds to avoid confusion
+    FileUtils.rm_f("../../lib/candela_ext.#{ext}") if File.exist?("../../lib/candela_ext.#{ext}")
+    
+    # Build the Rust library
+    system("cargo build --release") || raise("cargo build failed")
+    
+    # Create lib directory if it doesn't exist
+    FileUtils.mkdir_p("../../lib")
+    
+    # Copy with the correct name that Ruby expects
     FileUtils.cp(ext_source, "../../lib/candela_ext.#{ext}")
     
     puts "Rust extension built successfully"
